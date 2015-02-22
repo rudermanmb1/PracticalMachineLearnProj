@@ -1,0 +1,137 @@
+---
+title: "Exercise Form"
+author: "Brian Ruderman"
+date: "Saturday, February 14, 2015"
+output: html_document
+---
+**Synopsis**
+The purpose of this project is to the data on exercises provided to create an method that can predict the exercise someone is doing.
+
+**Procedure**
+
+```{r,cache=TRUE}
+setwd("~/GitFilesStart/PracticalMachineLearningProject")
+FullTrain <- read.csv("pml-training.csv")
+library(caret)
+```
+We know that there were 4 sensors were attached to the body.  Since the classes of exercise are distinguished by the anomalies in the motion of different body parts, we will take all measurements on the "x", "y", and "z" directions.  
+*Cross Validation:*  
+To determine which of the variables will be the most helpful, use k fold cross validation to determine which variables are the most useful for predicting the classe variable
+We will be using the random forest algorithim on all data sets.
+
+```{r,cache=TRUE}
+set.seed(23)
+folds <- createFolds(FullTrain$classe, k = 12, list = T, returnTrain =T)
+
+Train1 <- FullTrain[folds[[1]],] 
+Train2 <- FullTrain[folds[[2]],]
+Train3 <- FullTrain[folds[[3]],]
+Train4 <- FullTrain[folds[[4]],]
+Train5 <- FullTrain[folds[[5]],] 
+Train6 <- FullTrain[folds[[6]],]
+Train7 <- FullTrain[folds[[7]],]
+Train8 <- FullTrain[folds[[8]],]
+
+Test1 <- FullTrain[-folds[[1]],] 
+Test2 <- FullTrain[-folds[[2]],]
+Test3 <- FullTrain[-folds[[3]],]
+Test4 <- FullTrain[-folds[[4]],]
+Test5 <- FullTrain[-folds[[5]],] 
+Test6 <- FullTrain[-folds[[6]],]
+Test7 <- FullTrain[-folds[[7]],]
+Test8 <- FullTrain[-folds[[8]],]
+rm(folds)
+
+set.seed(23)
+tr1 <- train(classe ~., method = "rf", data = Train1[,c(grep("^gyros", colnames(Train4)), 160)], tuneGrid = data.frame(mtry =5))
+
+set.seed(23)
+tr2 <- train(classe ~., method = "rf", data = Train2[,c(grep("^magnet", colnames(Train4)), 160)], tuneGrid = data.frame(mtry =5))
+
+set.seed(23)
+tr3 <- train(classe ~., method = "rf", data = Train3[,c(grep("^accel", colnames(Train4)), 160)], tuneGrid = data.frame(mtry =5))
+
+set.seed(23)
+tr4 <- train(classe ~., method = "rf", data = Train4[,c(grep("_x$|_y$|_z$", colnames(Train4)), 160)], tuneGrid = data.frame(mtry =5))
+
+rm(Train1)
+rm(Train2)
+rm(Train3)
+rm(Train4)
+```
+Once we have set up our models, we can see which set of variables gives us the most accurate predictions using the code below
+```{r, cache=TRUE}
+#Testing variables
+
+prediction1 <- predict(tr1, Test1)
+prediction2 <- predict(tr2, Test2)
+prediction3 <- predict(tr3, Test3)
+prediction4 <- predict(tr4, Test4)
+
+
+#using only gyros measurment variables in x, y, and z directions
+confusionMatrix(prediction1, Test1$classe)[[3]][1]
+
+#using only magnet measurment variables in x, y, and z directions
+confusionMatrix(prediction2, Test2$classe)[[3]][1]
+
+#using only accel measurment variables in x, y, and z directions
+confusionMatrix(prediction3, Test3$classe)[[3]][1]
+
+#using all measurment variables in x, y, and z directions
+confusionMatrix(prediction4, Test4$classe)[[3]][1]
+
+rm(Test1);rm(Test2);rm(Test3);rm(Test4)
+
+```
+As shown above the algorithim that uses all of the variables related to the x, y, and z has the highest accuracy so we will use that. We can also use the accuracy measurements from the algorithims and confusion matrices to give us an estimate of how much greater the out of sample error will be.  
+
+we can now use our cross validation method to estimate the in sample and out of sample error of the model using the desired variables.
+
+```{r, cache=TRUE}
+#Testing accuracy
+
+set.seed(24)
+tr5 <- train(classe ~., method = "rf", data = Train5[,c(grep("_x$|_y$|_z$", colnames(Train5)), 160)], tuneGrid = data.frame(mtry =5))
+
+set.seed(25)
+tr6 <- train(classe ~., method = "rf", data = Train6[,c(grep("_x$|_y$|_z$", colnames(Train6)), 160)], tuneGrid = data.frame(mtry =5))
+
+set.seed(26)
+tr7 <- train(classe ~., method = "rf", data = Train7[,c(grep("_x$|_y$|_z$", colnames(Train7)), 160)], tuneGrid = data.frame(mtry =5))
+
+set.seed(27)
+tr8 <- train(classe ~., method = "rf", data = Train8[,c(grep("_x$|_y$|_z$", colnames(Train8)), 160)], tuneGrid = data.frame(mtry =5))
+
+prediction5 <- predict(tr5, Test5)
+prediction6 <- predict(tr6, Test6)
+prediction7 <- predict(tr7, Test7)
+prediction8 <- predict(tr8, Test8)
+
+#Mean estimated in sample accuracy
+estInSample <-mean(sapply(c(tr5[[4]][2],tr6[[4]][2],tr7[[4]][2],tr8[[4]][2]), mean))
+estInSample
+#Mean estimated out of sample accuracy
+estOutSample <-mean(sapply(c(confusionMatrix(prediction5, Test5$classe)[[3]][1],confusionMatrix(prediction6, Test6$classe)[[3]][1], confusionMatrix(prediction7, Test7$classe)[[3]][1],confusionMatrix(prediction8, Test8$classe))[[3]][1], mean))
+estOutSample
+
+rm(Test5);rm(Test6);rm(Test7);rm(Test8)
+```
+As expected the estimated mean out of sample accuracy is `r estOutSample` which is less than the in sample accuracy ( `r estInSample` ). Our calculations estimate an out of sample error of `r 1-estOutSample`.
+
+The final step is to use create the algorithim on the best set of variables on the entire training set and apply it to the test set to predict which form of exercise was being used in each test observation. 
+
+```{r, eval=FALSE}
+trainer <- train(classe ~., method = "rf", data = FullTrain[,c(grep("_x$|_y$|_z$", colnames(FullTrain)), 160)], tuneGrid = data.frame(mtry =5))
+
+FullTest <- read.csv("pml-testing.csv")
+prediction <- predict(trainer, FullTest)
+```
+**Conclusion:**
+By submitting the results to the submission part of the parject we know that the model generated worked.
+
+*Work cited*
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3SIy3iFK3
+
