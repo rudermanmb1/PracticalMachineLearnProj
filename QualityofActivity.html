@@ -171,7 +171,7 @@ estOutSample &lt;-mean(sapply(c(confusionMatrix(prediction5, Test5$classe)[[3]][
 estOutSample</code></pre>
 <pre><code>## [1] 0.9926606</code></pre>
 <pre class="r"><code>rm(Test5);rm(Test6);rm(Test7);rm(Test8)</code></pre>
-<p>As expected the estimated mean out of test accuracy is 0.9926606 which is greater than the in train accuracy ( 0.9852786 ). Our calculations estimate an out of sample error of 0.0073394.</p>
+<p>Interestingly the estimated mean out of the out of sample accuracy is 0.9926606 which is greater than the in in sample accuracy ( 0.9852786 ). Our calculations estimate an out of sample error of 0.0073394.</p>
 <p>The final step is to use create the algorithim on the best set of variables on the entire training set and apply it to the test set to predict which form of exercise was being used in each test observation.</p>
 <pre class="r"><code>trainer &lt;- train(classe ~., method = &quot;rf&quot;, data = FullTrain[,c(grep(&quot;_x$|_y$|_z$&quot;, colnames(FullTrain)), 160)], tuneGrid = data.frame(mtry =5))
 

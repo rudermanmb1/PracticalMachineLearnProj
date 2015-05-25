@@ -117,7 +117,7 @@ estOutSample
 
 rm(Test5);rm(Test6);rm(Test7);rm(Test8)
 ```
-As expected the estimated mean out of test accuracy is `r estOutSample` which is greater than the in train accuracy ( `r estInSample` ). Our calculations estimate an out of sample error of `r 1-estOutSample`.
+Interestingly the estimated mean out of the out of sample accuracy is `r estOutSample` which is greater than the in in sample accuracy ( `r estInSample` ). Our calculations estimate an out of sample error of `r 1-estOutSample`.
 
 The final step is to use create the algorithim on the best set of variables on the entire training set and apply it to the test set to predict which form of exercise was being used in each test observation. 
 
